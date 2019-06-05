@@ -72,7 +72,7 @@ BasicHashTable *create_hash_table(int capacity)
 {
   BasicHashTable *ht = malloc(sizeof(BasicHashTable));
   ht->capacity = capacity;
-  ht->storage = calloc(capacity, sizeof(char *));
+  ht->storage = calloc(capacity, sizeof(Pair *));
   return ht;
 }
 
@@ -86,14 +86,13 @@ BasicHashTable *create_hash_table(int capacity)
 void hash_table_insert(BasicHashTable *ht, char *key, char *value)
 {
   int index = hash(key, ht->capacity);
-  if (!ht->storage[index]) {
-    Pair *pair = create_pair(key, value);
-    ht->storage[index] = pair;
-  } else {
+
+  if (ht->storage[index]) {
     fprintf(stderr, "Collision alert: Index already taken");
-    Pair *pair = create_pair(key, value);
-    ht->storage[index] = pair;
   }
+
+  Pair *pair = create_pair(key, value);
+  ht->storage[index] = pair;
 
 }
 
@@ -106,6 +105,7 @@ void hash_table_remove(BasicHashTable *ht, char *key)
 {
   int index = hash(key, ht->capacity);
   if (ht->storage[index]) {
+    destroy_pair(ht->storage[index]);
     ht->storage[index] = NULL;
   }
 }
@@ -118,11 +118,11 @@ void hash_table_remove(BasicHashTable *ht, char *key)
 char *hash_table_retrieve(BasicHashTable *ht, char *key)
 {
   // hash the key to see if it's in the hash table
-  int hash_value = hash(key, ht->capacity);
+  int index = hash(key, ht->capacity);
 
   // if we find the hashed key in storage array, return the value associated with that key
-  if (ht->storage[hash_value]) {
-    Pair *found = ht->storage[hash_value];
+  if (ht->storage[index]) {
+    Pair *found = ht->storage[index];
     return found->value;
   }
 
@@ -141,7 +141,7 @@ void destroy_hash_table(BasicHashTable *ht)
   if (ht != NULL) {
     for (int i = 0; i < ht->capacity; i++) {
       // free the pointers to the key-value pairs
-      free(ht->storage[i]);
+      destroy_pair(ht->storage[i]);
     }
     // free the pointer to the storage array
     free(ht->storage);
