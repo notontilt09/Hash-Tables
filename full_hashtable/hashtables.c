@@ -129,12 +129,22 @@ void hash_table_remove(HashTable *ht, char *key)
     return;
   }
 
-  LinkedPair *pair = ht->storage[index];
-  while(pair) {
-    if (strcmp(key, pair->key) == 0) {
-      // TODO FINISH THIS
+  // if the key is the head of the linked list, just move the storage pointer to the 2nd element
+  LinkedPair *head = ht->storage[index];
+  if (strcmp(key, head->key) == 0) {
+    ht->storage[index] = ht->storage[index]->next;
+  } else {
+    LinkedPair *curr = ht->storage[index];
+    LinkedPair *next = ht->storage[index]->next;
+    while(curr) {
+      if (strcmp(key, next->key) == 0) {
+        curr->next = curr->next->next;
+        destroy_pair(next);
+      }
+      curr = curr->next;
     }
   }
+
 
 }
 
@@ -172,7 +182,7 @@ void destroy_hash_table(HashTable *ht)
   for (int i = 0; i < ht->capacity; i++) {
     if (ht->storage[i] != NULL) {
       LinkedPair *pair = ht->storage[i];
-      while(pair) {
+      while(pair->next) {
         destroy_pair(pair);
         pair = pair->next;
       }
@@ -192,15 +202,13 @@ void destroy_hash_table(HashTable *ht)
  */
 HashTable *hash_table_resize(HashTable *ht)
 {
-  HashTable *new_ht = malloc(sizeof(HashTable));
-  new_ht->capacity = 2 * ht->capacity;
-  new_ht->storage = calloc(ht->capacity * 2, sizeof(LinkedPair *));
+  HashTable *new_ht = create_hash_table(ht->capacity * 2);
 
   for (int i = 0; i < ht->capacity; i++) {
     new_ht->storage[i] = ht->storage[i];
   }
 
-  free(ht->storage);
+  destroy_hash_table(ht);
   return new_ht;
 }
 
