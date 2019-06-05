@@ -90,7 +90,27 @@ HashTable *create_hash_table(int capacity)
  */
 void hash_table_insert(HashTable *ht, char *key, char *value)
 {
+  int index = hash(key, ht->capacity);
 
+  // if index is empty, drop the key value linked pair there
+  if (ht->storage[index] == NULL) {
+    LinkedPair *pair = create_pair(key, value);
+    ht->storage[index] = pair;
+  } else {
+    // now we'll deal with collisions, when ht->storage[index] already exists
+    // iterate through linked list, checking if the the new key already exists, if it does, overwrite.  If not add to end of linked list.
+    LinkedPair *pair = ht->storage[index];
+    while(pair) {
+      if (strcmp(key, pair->key) == 0) {
+        pair->value = strdup(value);
+      } else {
+        if (pair->next == NULL) {
+          pair->next = create_pair(key, value);
+        }
+      }
+      pair = pair->next;
+    }
+  }
 }
 
 /*
@@ -116,6 +136,17 @@ void hash_table_remove(HashTable *ht, char *key)
  */
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
+  int index = hash(key, ht->capacity);
+
+  if (ht->storage[index]) {
+    LinkedPair *pair = ht->storage[index];
+    while(pair) {
+      if (strcmp(key, pair->key) == 0) {
+        return pair->value;
+      }
+      pair = pair->next;
+    }
+  }
   return NULL;
 }
 
@@ -158,11 +189,11 @@ int main(void)
   printf("%s", hash_table_retrieve(ht, "line_2"));
   printf("%s", hash_table_retrieve(ht, "line_3"));
 
-  int old_capacity = ht->capacity;
-  ht = hash_table_resize(ht);
-  int new_capacity = ht->capacity;
+  // int old_capacity = ht->capacity;
+  // ht = hash_table_resize(ht);
+  // int new_capacity = ht->capacity;
 
-  printf("\nResizing hash table from %d to %d.\n", old_capacity, new_capacity);
+  // printf("\nResizing hash table from %d to %d.\n", old_capacity, new_capacity);
 
   destroy_hash_table(ht);
 
