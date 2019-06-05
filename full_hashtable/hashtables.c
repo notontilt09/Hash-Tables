@@ -182,9 +182,10 @@ void destroy_hash_table(HashTable *ht)
   for (int i = 0; i < ht->capacity; i++) {
     if (ht->storage[i] != NULL) {
       LinkedPair *pair = ht->storage[i];
-      while(pair->next) {
-        destroy_pair(pair);
-        pair = pair->next;
+      while(pair) {
+        LinkedPair *remove = pair;
+        pair = remove->next;
+        destroy_pair(remove);
       }
     }
   }
@@ -205,7 +206,11 @@ HashTable *hash_table_resize(HashTable *ht)
   HashTable *new_ht = create_hash_table(ht->capacity * 2);
 
   for (int i = 0; i < ht->capacity; i++) {
-    new_ht->storage[i] = ht->storage[i];
+    LinkedPair *pair = ht->storage[i];
+    while(pair) {
+      hash_table_insert(new_ht, pair->key, pair->value);
+      pair = pair->next;
+    }
   }
 
   destroy_hash_table(ht);
