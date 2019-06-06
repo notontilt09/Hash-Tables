@@ -104,7 +104,7 @@ void hash_table_insert(BasicHashTable *ht, char *key, char *value)
 void hash_table_remove(BasicHashTable *ht, char *key)
 {
   int index = hash(key, ht->capacity);
-  if (ht->storage[index]) {
+  if (ht->storage[index] && strcmp(ht->storage[index]->key, key) == 0) {
     destroy_pair(ht->storage[index]);
     ht->storage[index] = NULL;
   }
@@ -121,7 +121,7 @@ char *hash_table_retrieve(BasicHashTable *ht, char *key)
   int index = hash(key, ht->capacity);
 
   // if we find the hashed key in storage array, return the value associated with that key
-  if (ht->storage[index]) {
+  if (ht->storage[index] && strcmp(ht->storage[index]->key, key) == 0) {
     Pair *found = ht->storage[index];
     return found->value;
   }
