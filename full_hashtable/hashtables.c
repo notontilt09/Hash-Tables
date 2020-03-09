@@ -73,8 +73,9 @@ unsigned int hash(char *str, int max)
  */
 HashTable *create_hash_table(int capacity)
 {
-  HashTable *ht;
-
+  HashTable *ht = malloc(sizeof(HashTable));
+  ht->capacity = capacity;
+  ht->storage = calloc(capacity, sizeof(LinkedPair *));
   return ht;
 }
 
@@ -89,7 +90,27 @@ HashTable *create_hash_table(int capacity)
  */
 void hash_table_insert(HashTable *ht, char *key, char *value)
 {
+  int index = hash(key, ht->capacity);
 
+  // if index is empty, drop the key value linked pair there
+  if (ht->storage[index] == NULL) {
+    LinkedPair *pair = create_pair(key, value);
+    ht->storage[index] = pair;
+  } else {
+    // now we'll deal with collisions, when ht->storage[index] already exists
+    // iterate through linked list, checking if the the new key already exists, if it does, overwrite.  If not add to end of linked list.
+    LinkedPair *pair = ht->storage[index];
+    while(pair) {
+      if (strcmp(key, pair->key) == 0) {
+        pair->value = strdup(value);
+      } else {
+        if (pair->next == NULL) {
+          pair->next = create_pair(key, value);
+        }
+      }
+      pair = pair->next;
+    }
+  }
 }
 
 /*
@@ -102,6 +123,28 @@ void hash_table_insert(HashTable *ht, char *key, char *value)
  */
 void hash_table_remove(HashTable *ht, char *key)
 {
+  int index = hash(key, ht->capacity);
+
+  if (ht->storage[index] == NULL) {
+    return;
+  }
+
+  // if the key is the head of the linked list, just move the storage pointer to the 2nd element
+  LinkedPair *head = ht->storage[index];
+  if (strcmp(key, head->key) == 0) {
+    ht->storage[index] = ht->storage[index]->next;
+  } else {
+    LinkedPair *curr = ht->storage[index];
+    LinkedPair *next = ht->storage[index]->next;
+    while(curr) {
+      if (strcmp(key, next->key) == 0) {
+        curr->next = curr->next->next;
+        destroy_pair(next);
+      }
+      curr = curr->next;
+    }
+  }
+
 
 }
 
@@ -115,6 +158,17 @@ void hash_table_remove(HashTable *ht, char *key)
  */
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
+  int index = hash(key, ht->capacity);
+
+  if (ht->storage[index]) {
+    LinkedPair *pair = ht->storage[index];
+    while(pair) {
+      if (strcmp(key, pair->key) == 0) {
+        return pair->value;
+      }
+      pair = pair->next;
+    }
+  }
   return NULL;
 }
 
@@ -125,7 +179,18 @@ char *hash_table_retrieve(HashTable *ht, char *key)
  */
 void destroy_hash_table(HashTable *ht)
 {
-
+  for (int i = 0; i < ht->capacity; i++) {
+    if (ht->storage[i] != NULL) {
+      LinkedPair *pair = ht->storage[i];
+      while(pair) {
+        LinkedPair *remove = pair;
+        pair = remove->next;
+        destroy_pair(remove);
+      }
+    }
+  }
+  free(ht->storage);
+  free(ht);
 }
 
 /*
@@ -138,8 +203,17 @@ void destroy_hash_table(HashTable *ht)
  */
 HashTable *hash_table_resize(HashTable *ht)
 {
-  HashTable *new_ht;
+  HashTable *new_ht = create_hash_table(ht->capacity * 2);
 
+  for (int i = 0; i < ht->capacity; i++) {
+    LinkedPair *pair = ht->storage[i];
+    while(pair) {
+      hash_table_insert(new_ht, pair->key, pair->value);
+      pair = pair->next;
+    }
+  }
+
+  destroy_hash_table(ht);
   return new_ht;
 }
 
